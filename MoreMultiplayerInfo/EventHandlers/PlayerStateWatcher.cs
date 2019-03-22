@@ -65,9 +65,6 @@ namespace MoreMultiplayerInfo.EventHandlers
 
             private string GetActivityDisplay()
             {
-                if (MinutesSinceWhen > 6 && Activity == "startevent")
-                    return "Started a cutscene";
-
                 if (string.IsNullOrEmpty(Activity))
                 {
                     Activity = "Something suspicious";
@@ -75,12 +72,15 @@ namespace MoreMultiplayerInfo.EventHandlers
                     return Activity;
                 }
 
-                if (MinutesSinceWhen >= TwoHours)
+                if (MinutesSinceWhen >= TwoHours || (MinutesSinceWhen > OneHourSpan && Activity == "endevent"))
                 {
                     Activity = "Nothing noteworthy";
 
                     return Activity;
                 }
+
+                if (MinutesSinceWhen > 6 && Activity == "startevent")
+                    return "Started a cutscene";
 
                 if (ActivityDisplayNames.Keys.Any(k => Activity.Contains(k)))
                 {
@@ -141,9 +141,6 @@ namespace MoreMultiplayerInfo.EventHandlers
                 if (CheckUsingTool(player, playerId, currentLocation)) continue;
 
                 if (CheckCutscene(player, playerId, currentLocation)) continue;
-
-                if (e.IsMultipleOf(180) && LastActions[playerId].Activity == "endevent")
-                    LastActions[playerId].Activity = "Nothing noteworthy";
 
             }
         }
