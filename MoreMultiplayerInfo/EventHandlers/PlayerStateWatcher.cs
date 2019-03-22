@@ -72,7 +72,7 @@ namespace MoreMultiplayerInfo.EventHandlers
                     return Activity;
                 }
 
-                if (MinutesSinceWhen >= TwoHours || (MinutesSinceWhen > OneHourSpan && Activity == "endevent"))
+                if (MinutesSinceWhen >= TwoHours || (MinutesSinceWhen >= OneHourSpan && Activity == "endevent"))
                 {
                     Activity = "Nothing noteworthy";
 
