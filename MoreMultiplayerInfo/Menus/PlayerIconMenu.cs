@@ -4,38 +4,47 @@ using MoreMultiplayerInfo.Helpers;
 using MoreMultiplayerInfo.Models;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
+using StardewModdingAPI.Utilities;
 using StardewValley;
 using StardewValley.Menus;
 using System;
 using System.Collections.Generic;
-using StardewModdingAPI.Utilities;
 
 namespace MoreMultiplayerInfo.EventHandlers
 {
     public class PlayerIconMenu : IClickableMenu
     {
         private readonly ReadyCheckHandler _readyCheckHandler;
-
+        private readonly IModHelper _helper;
         private readonly IMonitor _monitor;
+
+        private int lastPlayerCount;
 
         public PlayerIconMenu(ReadyCheckHandler readyCheckHandler, IMonitor monitor, IModHelper helper)
         {
             _readyCheckHandler = readyCheckHandler;
             _monitor = monitor;
+            _helper = helper;
             Icons = new List<PlayerIcon>();
-
-            GameEvents.UpdateTick += SetupIcons;
-
-            GraphicsEvents.Resize += SetupIcons;
+            _helper.Events.GameLoop.UpdateTicked += SetupIcons;
+            _helper.Events.Display.WindowResized += SetupIcons;
+            _helper.Events.Multiplayer.PeerContextReceived += RefreshIcons;
+            _helper.Events.GameLoop.SaveLoaded += RefreshIcons;
         }
 
         private void SetupIcons(object sender, EventArgs e)
         {
-            if (!Context.IsWorldReady) return;
-
-            GameEvents.UpdateTick -= SetupIcons;
-
+            _helper.Events.GameLoop.UpdateTicked -= SetupIcons;
             SetupIcons();
+        }
+
+        private void RefreshIcons(object sender, EventArgs e)
+        {
+            if (Game1.numberOfPlayers() > lastPlayerCount)
+            {
+                lastPlayerCount = Game1.numberOfPlayers();
+                SetupIcons();
+            }
         }
 
         private float WaitingIconScale => 0.5f;
@@ -48,19 +57,17 @@ namespace MoreMultiplayerInfo.EventHandlers
 
         public List<PlayerIcon> Icons { get; set; }
 
-
         public void SetupIcons()
         {
-            Icons = new List<PlayerIcon>();
-
+            Icons.Clear();
             var players = PlayerHelpers.GetAllCreatedFarmers();
 
             this.allClickableComponents = new List<ClickableComponent>();
-
-            this.xPositionOnScreen = Game1.graphics.GraphicsDevice.Viewport.TitleSafeArea.Right - 90;
-            this.yPositionOnScreen = 310;
             this.height = players.Count * HeadshotIconSize;
             this.width = HeadshotIconSize;
+
+            this.xPositionOnScreen = DrawingHelper.GetWidthInPlayArea() - 90;
+            this.yPositionOnScreen = 310;
 
             for (var idx = 0; idx < players.Count; idx++)
             {
@@ -95,7 +102,6 @@ namespace MoreMultiplayerInfo.EventHandlers
                     scale: Game1.pixelZoom * 0.5f,
                     drawShadow: false);
 
-
                 var mugshotPosition = new Rectangle(xPos, yPos, HeadshotIconSize - 8, HeadshotIconSize - 16);
 
                 this.allClickableComponents.Add(waitingIcon);
@@ -108,15 +114,13 @@ namespace MoreMultiplayerInfo.EventHandlers
                     OfflineIcon = offlineIcon
                 });
             }
-            
         }
 
         public override void draw(SpriteBatch b)
         {
-            if (Game1.eventUp || !Context.IsWorldReady) return; /* Don't draw during festivals or events */
+            if (Game1.eventUp) return; /* Don't draw during festivals or events */
 
             DrawPlayerIcons();
-
             base.draw(b);
         }
 
@@ -125,7 +129,7 @@ namespace MoreMultiplayerInfo.EventHandlers
             foreach (var icon in Icons)
             {
                 var player = PlayerHelpers.GetPlayerWithUniqueId(icon.PlayerId);
-
+                if (player == null) continue;
                 player.FarmerRenderer.drawMiniPortrat(Game1.spriteBatch, new Vector2(icon.HeadshotPosition.X, icon.HeadshotPosition.Y), 0.5f, 0.75f * Game1.pixelZoom, 1, player);
 
                 var miniPortraitBounds = new Rectangle(Convert.ToInt32(icon.HeadshotPosition.X) + 8, Convert.ToInt32(icon.HeadshotPosition.Y) + 8, icon.HeadshotPosition.Width, icon.HeadshotPosition.Height);
@@ -146,7 +150,6 @@ namespace MoreMultiplayerInfo.EventHandlers
                     DrawHoverTextForPlayer(player);
                     UpdateMouseTypeToCursor();
                 }
-
             }
         }
 

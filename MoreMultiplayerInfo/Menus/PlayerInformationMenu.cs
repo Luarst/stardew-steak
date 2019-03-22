@@ -1,7 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using MoreMultiplayerInfo.EventHandlers;
 using MoreMultiplayerInfo.Helpers;
+using MoreMultiplayerInfo.EventHandlers;
 using StardewModdingAPI;
 using StardewModdingAPI.Events;
 using StardewValley;
@@ -28,7 +28,6 @@ namespace MoreMultiplayerInfo
         private ClickableTextureComponent _optionsIcon;
 
         private Vector2 _locationPos;
-
         private Vector2 _lastActionPos;
         private Vector2 _lastActionTimePos;
 
@@ -44,20 +43,14 @@ namespace MoreMultiplayerInfo
 
         private static int GenericHeightSpacing => 25;
 
-        public PlayerInformationMenu(long playerUniqueMultiplayerId, IModHelper helper) : base(Xposition, Yposition,
-            Width, Height, true)
+        public PlayerInformationMenu(long playerUniqueMultiplayerId, IModHelper helper) : base(Xposition, Yposition, Width, Height, true)
         {
             PlayerId = playerUniqueMultiplayerId;
             _helper = helper;
 
-            GraphicsEvents.Resize += Resize;
+            this._helper.Events.Display.WindowResized += Resize;
 
-                _configOptions = ConfigHelper.GetOptions();
-
-            if (!_configOptions.ShowInventory)
-            {
-                this.height -= 200;
-            }
+            _configOptions = ConfigHelper.GetOptions();
         }
 
         private void Resize(object sender, EventArgs e)
@@ -98,45 +91,34 @@ namespace MoreMultiplayerInfo
             var zoom = (int) (Game1.pixelZoom * 0.75f);
 
             _optionsIcon = new ClickableTextureComponent("", new Rectangle(xPositionOnScreen + 25, yPositionOnScreen + 25, 17 * zoom, 17 * zoom), "", "", Game1.mouseCursors, new Rectangle(162, 440, 17, 17), zoom, false);
-
             _optionsIcon.draw(b);
         }
 
-
-
         private void DrawHealth(SpriteBatch b)
         {
-            _healthBar = new PlayerHealthInfo(Player.health, Player.maxHealth, (int) Player.Stamina, Player.maxStamina,
-                new Rectangle(_skillInfo.xPositionOnScreen + _skillInfo.Width, _skillInfo.yPositionOnScreen, 45, 11));
+            _healthBar = new PlayerHealthInfo(Player.health, Player.maxHealth, (int) Player.Stamina, Player.maxStamina, new Rectangle(_skillInfo.xPositionOnScreen + _skillInfo.Width, _skillInfo.yPositionOnScreen, 45, 11));
             _healthBar.draw(b);
         }
 
         private void DrawSkills(SpriteBatch b)
         {
-            _skillInfo = new PlayerSkillInfo(Player,
-                new Vector2(_inventory.xPositionOnScreen,
-                    _inventory.yPositionOnScreen + _inventory.height + GenericHeightSpacing));
+            _skillInfo = new PlayerSkillInfo(Player, new Vector2(_inventory.xPositionOnScreen, _inventory.yPositionOnScreen + _inventory.height + GenericHeightSpacing));
             _skillInfo.draw(b);
         }
 
         private void DrawLocationInfo(SpriteBatch b)
         {
-            
-
             var yPos = _inventory.yPositionOnScreen + _inventory.height + GenericHeightSpacing;
 
             var text = $"Location: {LocationHelper.GetFriendlyLocationName(Player.currentLocation.Name)} ";
-
-            if (PlayerHelpers.IsPlayerOffline(PlayerId))
-            {
-                text = "(Offline)";
-            }
 
             var font = Game1.smallFont;
 
             var textWidth = font.MeasureString(text).X;
 
             var xPos = _inventory.xPositionOnScreen + (_inventory.width * 3 / 4) - (textWidth / 2);
+
+            b.DrawString(font, text, new Vector2(xPos, yPos), Color.Black);
 
             _locationPos = new Vector2(xPos, yPos);
 
@@ -171,10 +153,10 @@ namespace MoreMultiplayerInfo
             _lastActionTimePos = new Vector2(xPos - (timeTextWidth / 2), yPos);
 
             b.DrawString(font, lastActionTimeText, _lastActionTimePos, Color.Black);
-
         }
 
-        private void DrawTitle(SpriteBatch b)
+
+            private void DrawTitle(SpriteBatch b)
         {
             var text = $"{Player.Name}'s Info";
 
@@ -189,38 +171,48 @@ namespace MoreMultiplayerInfo
 
         private void DrawBackground(SpriteBatch b)
         {
-            IClickableMenu.drawTextureBox(b, Game1.mouseCursors, new Rectangle(384, 373, 18, 18),
-                this.xPositionOnScreen, this.yPositionOnScreen, this.width, this.height, Color.White, Game1.pixelZoom);
+            IClickableMenu.drawTextureBox(b, Game1.mouseCursors, new Rectangle(384, 373, 18, 18), this.xPositionOnScreen, this.yPositionOnScreen, this.width, this.height, Color.White, Game1.pixelZoom);
 
             this.upperRightCloseButton.draw(b);
         }
 
         private void DrawHoverText(SpriteBatch b)
         {
-            if (!string.IsNullOrEmpty(HoverText))
-            {
-                IClickableMenu.drawToolTip(b, HoveredItem?.getDescription() ?? HoverText, HoverText, HoveredItem);
+            if (!string.IsNullOrEmpty(HoverText)) {
+            if (HoveredItem != null)
+                IClickableMenu.drawToolTip(b, HoveredItem.getDescription(), HoverText, HoveredItem);
+            else
+                IClickableMenu.drawHoverText(Game1.spriteBatch, HoverText, Game1.dialogueFont);
             }
         }
 
 
         private void DrawInventory(SpriteBatch b)
         {
-            _inventory = new InventoryMenu(this.xPositionOnScreen + 38, this.yPositionOnScreen + 100, false,
-                Player.Items)
+            _inventory = new InventoryMenu(this.xPositionOnScreen + 38, this.yPositionOnScreen + 100, false, Player.Items, null, -1, 3, 0, 0, false)
             {
                 showGrayedOutSlots = true
             };
 
             if (_configOptions.ShowInventory)
             {
+                if (_configOptions.InventoryGrid) {
+                    for (int i = 0; i < 36; i++) {
+                        Vector2 toDraw = new Vector2((float)(Game1.viewport.Width / 2 - Game1.tileSize * 12 / 2 + (i % 12) * Game1.tileSize) - 3, (float)(this.yPositionOnScreen + i / 12 * (Game1.tileSize) + (i / 12 - 1) * Game1.pixelZoom - (Game1.tileSize / 5)) + 111);
+                        b.Draw(Game1.menuTexture, toDraw, new Rectangle?(Game1.getSourceRectForStandardTileSheet(Game1.menuTexture, 10, -1, -1)), Color.White, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.5f);
+                        if (i >= Player.maxItems)
+                            b.Draw(Game1.menuTexture, toDraw, new Rectangle?(Game1.getSourceRectForStandardTileSheet(Game1.menuTexture, 57, -1, -1)), Color.White * 0.5f, 0f, Vector2.Zero, 1f, SpriteEffects.None, 0.5f);
+                    }
+                }
+                Vector2 toDraw1 = new Vector2((float)(Game1.viewport.Width / 2 - Game1.tileSize * 12 / 2 + Player.Items.IndexOf(Player?.CurrentItem) * Game1.tileSize) - 3, (float)(_inventory.yPositionOnScreen - Game1.tileSize * 3 / 2) + 91);
+                b.Draw(Game1.menuTexture, toDraw1, new Rectangle?(Game1.getSourceRectForStandardTileSheet(Game1.menuTexture, 56, -1, -1)), Color.White * 1f);
                 _inventory.draw(b);
             }
             else
             {
                 _inventory.height = 0;
             }
-
+            
         }
 
         public override void performHoverAction(int x, int y)
@@ -230,14 +222,18 @@ namespace MoreMultiplayerInfo
             HoveredItem = null;
             HoverText = string.Empty;
 
-            if (_inventory != null && _inventory.isWithinBounds(x, y))
+            if (_inventory.isWithinBounds(x, y))
             {
                 SetHoverTextFromInventory(x, y);
             }
 
-            if (_optionsIcon != null && _optionsIcon.containsPoint(x, y))
+            if (_optionsIcon.containsPoint(x, y))
             {
                 HoverText = "Configure Mod Settings";
+            }
+
+            if (_optionsIcon.containsPoint(x, y))
+            {
                 Game1.mouseCursor = 9;
             }
 
@@ -248,7 +244,7 @@ namespace MoreMultiplayerInfo
         {
             foreach (ClickableComponent c in _inventory.inventory)
             {
-                if (c != null && c.containsPoint(x, y))
+                if (c.containsPoint(x, y))
                 {
                     var item = _inventory.getItemFromClickableComponent(c);
                     if (item == null)
@@ -272,7 +268,7 @@ namespace MoreMultiplayerInfo
 
                 Game1.activeClickableMenu = optionsMenu;
             }
-
+            
 
             base.receiveLeftClick(x, y, playSound);
         }
@@ -287,10 +283,7 @@ namespace MoreMultiplayerInfo
             this.exitThisMenu(playSound);
 
             Game1.onScreenMenus.Remove(this);
-            GraphicsEvents.Resize -= Resize;
+            this._helper.Events.Display.WindowResized -= Resize;
         }
-        
-
-        
     }
 }

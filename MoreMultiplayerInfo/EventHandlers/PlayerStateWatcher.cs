@@ -29,11 +29,12 @@ namespace MoreMultiplayerInfo.EventHandlers
                 { "edge", "Slashed a sword" },
                 { "blade", "Slashed a sword" },
                 { "mallet", "Slammed a mallet" },
-                { "swapped items", "Inventory management" },
+                { "itemswap", "Rearranging items" },
                 { "pole", "Went fishing" },
                 { "rod", "Went fishing" },
                 { "slingshot", "Fired a slingshot" },
-                { "event", "Watching a cutscene" },
+                { "startevent", "Transitioned screens" },
+                { "endevent", "Ended a cutscene" }
             };
 
 
@@ -43,7 +44,7 @@ namespace MoreMultiplayerInfo.EventHandlers
 
             public bool Hidden { get; set; }
 
-            private int WhenInMinutes => GameTimeHelper.GameTimeToMinutes(When);            
+            private int WhenInMinutes => GameTimeHelper.GameTimeToMinutes(When);
 
             public string LocationName { get; set; }
 
@@ -55,7 +56,7 @@ namespace MoreMultiplayerInfo.EventHandlers
 
             private int MinutesSinceWhen => GameTimeHelper.GameTimeToMinutes(Game1.timeOfDay) - WhenInMinutes;
 
-            
+
 
             public string GetDisplayText()
             {
@@ -64,6 +65,9 @@ namespace MoreMultiplayerInfo.EventHandlers
 
             private string GetActivityDisplay()
             {
+                if (MinutesSinceWhen > 6 && Activity == "startevent")
+                    return "Started a cutscene";
+
                 if (string.IsNullOrEmpty(Activity))
                 {
                     Activity = "Something suspicious";
@@ -90,20 +94,20 @@ namespace MoreMultiplayerInfo.EventHandlers
             {
                 if (MinutesSinceWhen <= HalfHour)
                 {
-                    return "just now";
+                    return "just now.";
                 }
 
                 if (MinutesSinceWhen < OneHourSpan)
                 {
-                    return $"{MinutesSinceWhen} minutes ago";
+                    return $"{MinutesSinceWhen} seconds ago.";
                 }
 
                 if (MinutesSinceWhen < TwoHours)
                 {
-                    return "one hour ago";
+                    return "a minute ago.";
                 }
 
-                return "since " + Game1.getTimeOfDayString(When);
+                return "since " + Game1.getTimeOfDayString(When) + ".";
             }
 
         }
@@ -114,11 +118,12 @@ namespace MoreMultiplayerInfo.EventHandlers
         {
             _helper = helper;
             LastActions = new Dictionary<long, PlayerLastActivity>();
-            GameEvents.EighthUpdateTick += WatchPlayerActions;
+            _helper.Events.GameLoop.UpdateTicked += WatchPlayerActions;
         }
 
-        private void WatchPlayerActions(object sender, EventArgs e)
+        private void WatchPlayerActions(object sender, UpdateTickedEventArgs e)
         {
+            if (!e.IsMultipleOf(8)) return;
             if (!Context.IsWorldReady) return;
 
             var players = PlayerHelpers.GetAllCreatedFarmers();
@@ -127,18 +132,37 @@ namespace MoreMultiplayerInfo.EventHandlers
             {
                 var playerId = player.uniqueMultiplayerID;
 
-                LastActions.GetOrCreateDefault(playerId);
-                
                 var currentLocation = player.currentLocation?.name ?? new NetString("(unknown location)");
 
-                if (CheckCutscene(player, playerId, currentLocation)) continue;
+                LastActions.GetOrCreateDefault(playerId);
 
-                if (CheckLocationChange(currentLocation, playerId)) continue;
+                if (CheckLocationChange(player, currentLocation, playerId)) continue;
 
                 if (CheckUsingTool(player, playerId, currentLocation)) continue;
 
+                if (CheckCutscene(player, playerId, currentLocation)) continue;
+
+                if (e.IsMultipleOf(180) && LastActions[playerId].Activity == "endevent")
+                    LastActions[playerId].Activity = "Nothing noteworthy";
 
             }
+        }
+
+        private bool CheckCutscene(Farmer player, NetLong playerId, NetString currentLocation)
+        {
+            if (player.hidden != LastActions[playerId].Hidden && currentLocation == LastActions[playerId].LocationName && !(player.isRidingHorse()))
+            {
+                LastActions[playerId] = new PlayerLastActivity
+                {
+                    Activity = player.hidden ? "startevent" : "endevent",
+                    When = Game1.timeOfDay,
+                    LocationName = currentLocation,
+                    Hidden = player.hidden?.Value ?? false
+                };
+
+                return true;
+            }
+            return false;
         }
 
         private static bool CheckUsingTool(Farmer player, NetLong playerId, NetString currentLocation)
@@ -158,7 +182,7 @@ namespace MoreMultiplayerInfo.EventHandlers
             return false;
         }
 
-        private static bool CheckLocationChange(NetString currentLocation, NetLong playerId)
+        private static bool CheckLocationChange(Farmer player, NetString currentLocation, NetLong playerId)
         {
             if (currentLocation != LastActions[playerId].LocationName)
             {
@@ -169,30 +193,6 @@ namespace MoreMultiplayerInfo.EventHandlers
                     When = Game1.timeOfDay,
                     Hidden = false
                 };
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool CheckCutscene(Farmer player, NetLong playerId, NetString currentLocation)
-        {
-            if (player.hidden != LastActions[playerId].Hidden && !(player.isRidingHorse()))
-            {
-                if (ConfigHelper.GetOptions().ShowCutsceneInfoInChatBox)
-                {
-                    var verbed = player.hidden ? "entered a" : "finished the";
-                    _helper.SelfInfoMessage($"{player.Name} has {verbed} cutscene.");
-                }
-
-                LastActions[playerId] = new PlayerLastActivity
-                {
-                    Activity = "event",
-                    When = Game1.timeOfDay,
-                    LocationName = currentLocation,
-                    Hidden = player.hidden?.Value ?? false
-                };
-
                 return true;
             }
 

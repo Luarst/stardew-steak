@@ -1,6 +1,10 @@
-﻿using StardewValley;
+﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
+using StardewValley;
 
 namespace MoreMultiplayerInfo.Helpers
 {
@@ -42,7 +46,7 @@ namespace MoreMultiplayerInfo.Helpers
             { "SkullCave", "Skull Cavern Entrance" },
             { "Tent", "Mountain Tent" },
             { "Town", "Pelican Town" },
-            { "UndergroundMine", "Mountain Mines Entrance" },
+            { "Mine", "Mountain Mines Entrance" },
             { "WitchHut", "Witch Hut" },
             { "WitchSwamp", "Witch Swamp" },
             { "WitchWarpCave", "Witch Warp Cave" },
@@ -56,10 +60,8 @@ namespace MoreMultiplayerInfo.Helpers
             Regex regex = new Regex(@"\d+$");
             if (regex.IsMatch(locationName))
             {
-                var floor = regex.Match(locationName);
-                var mine = locationName.Contains("UndergroundMine") ? "Mountain Mine" : "Skull Cavern";
-
-                return $"Floor {floor} of {mine}";
+                var mine = locationName.Contains("UndergroundMine") ? regex.Match(locationName) + " of Mountain Mine" : Convert.ToInt16(regex.Match(locationName)) - 120 + "of Skull Cavern";
+                return $"Floor {mine}";
             }
 
             if (Locations.ContainsKey(locationName))

@@ -27,7 +27,7 @@ namespace MoreMultiplayerInfo.EventHandlers
             ReadyPlayers = new Dictionary<long, HashSet<string>>();
             ReadyChecks = new Dictionary<string, HashSet<long>>();
             
-            GameEvents.OneSecondTick += UpdateReadyChecks;
+            helper.Events.GameLoop.OneSecondUpdateTicked += UpdateReadyChecks;
         }
         
         private void UpdateReadyChecks(object sender, EventArgs e)
@@ -66,19 +66,20 @@ namespace MoreMultiplayerInfo.EventHandlers
                 if (player == Game1.player.UniqueMultiplayerID) continue; /* Don't care about current player */
 
                 ReadyPlayers.GetOrCreateDefault(player);
-                
+
                 var checksBefore = readyPlayersBefore[player];
                 var checksNow = ReadyPlayers[player];
 
                 var newCheck = checksNow.FirstOrDefault(c => !checksBefore.Contains(c));
                 var removedCheck = checksBefore.FirstOrDefault(c => !checksNow.Contains(c));
 
-                var playerName = PlayerHelpers.GetPlayerWithUniqueId(player).Name;
+                var playerName = PlayerHelpers.GetPlayerWithUniqueId(player)?.Name;
 
                 var options = ConfigHelper.GetOptions();
 
                 if (newCheck != null && newCheck != "wakeup")
                 {
+
                     if (options.ShowReadyInfoInChatBox)
                     {
                         _helper.SelfInfoMessage($"{playerName} is now ready {GetFriendlyReadyCheckName(newCheck)}.");
@@ -88,8 +89,6 @@ namespace MoreMultiplayerInfo.EventHandlers
                     {
                         WarnIfIAmLastPlayerReady(newCheck);
                     }
-
-
                 }
 
                 if (removedCheck != null && removedCheck != "wakeup" && options.ShowReadyInfoInChatBox)
@@ -143,7 +142,7 @@ namespace MoreMultiplayerInfo.EventHandlers
             var readyChecksValue = readyChecksField?.GetValue();
             var readyChecksValueType = readyChecksValue?.GetType();
 
-            var readyChecksValueTypeValues = (IEnumerable<object>) readyChecksValueType?.GetProperty("Values")?.GetValue(readyChecksValue) ?? Enumerable.Empty<object>();
+            var readyChecksValueTypeValues = (IEnumerable<object>)readyChecksValueType?.GetProperty("Values")?.GetValue(readyChecksValue) ?? Enumerable.Empty<object>();
             return readyChecksValueTypeValues.ToList();
         }
 

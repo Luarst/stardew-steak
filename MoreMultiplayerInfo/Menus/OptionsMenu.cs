@@ -103,18 +103,18 @@ namespace MoreMultiplayerInfo
 
         private void DrawBoolOption(int idx, bool value, string propertyName, SpriteBatch b)
         {
-            var checkboxSize = 10 * Game1.pixelZoom;
+            var checkboxSize = 9 * Game1.pixelZoom;
 
-            var xPos = this.xPositionOnScreen + this.width - (2 * BorderWidth) - checkboxSize;
+            var xPos = this.xPositionOnScreen + this.width - (2 * BorderWidth) - (checkboxSize + 6);
             var yPos = this.yPositionOnScreen + BorderWidth + (idx * OptionHeight) + (OptionHeight / 2) - (checkboxSize / 2);
 
-            var uncheckedSrc = new Rectangle(267, 256, 10, 10);
+            var uncheckedSrc = new Rectangle(227, 425, 9, 9);
 
-            var checkedSrc = new Rectangle(338, 494, 12, 12);
+            var checkedSrc = new Rectangle(236, 425, 9, 9);
 
             var src = value ? checkedSrc : uncheckedSrc;
 
-            var checkbox = new ClickableTextureComponent(propertyName, new Rectangle(xPos, yPos, checkboxSize, checkboxSize), "", "", Game1.mouseCursors, src, Game1.pixelZoom * 0.75f, false);
+            var checkbox = new ClickableTextureComponent(propertyName, new Rectangle(xPos, yPos, checkboxSize, checkboxSize), "", "", Game1.mouseCursors, src, Game1.pixelZoom, false);
 
             Checkboxes.Add(checkbox);
 
@@ -138,8 +138,6 @@ namespace MoreMultiplayerInfo
                 Game1.onScreenMenus.Remove(this);
 
                 var menu = new PlayerInformationMenu(_originPlayerId, _helper);
-
-                Game1.activeClickableMenu = menu;
             }
 
             base.receiveLeftClick(x, y, playSound);

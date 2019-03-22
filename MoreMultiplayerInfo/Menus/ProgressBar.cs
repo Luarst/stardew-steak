@@ -47,7 +47,7 @@ namespace MoreMultiplayerInfo
                 width = Convert.ToInt32(_position.Width * PercentComplete);
             }
             
-            b.Draw(TextureHelper.WhitePixel, new Rectangle(xPos, yPos, width, height), _color);
+            b.Draw(DrawingHelper.WhitePixel, new Rectangle(xPos, yPos, width, height), _color);
 
             base.draw(b);
         }

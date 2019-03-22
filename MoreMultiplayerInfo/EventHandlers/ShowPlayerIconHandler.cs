@@ -2,6 +2,7 @@
 using MoreMultiplayerInfo.Helpers;
 using StardewModdingAPI;
 using StardewValley;
+using System;
 using System.Linq;
 
 namespace MoreMultiplayerInfo
@@ -11,8 +12,10 @@ namespace MoreMultiplayerInfo
         private readonly IMonitor _monitor;
         private readonly IModHelper _helper;
         private readonly ReadyCheckHandler _readyCheckHandler;
-        
+
         private PlayerIconMenu _iconMenu;
+
+        private PlayerInformationMenu _infoMenu;
 
         public ShowPlayerIconHandler(IMonitor monitor, IModHelper helper)
         {
@@ -20,27 +23,21 @@ namespace MoreMultiplayerInfo
             _helper = helper;
 
             _readyCheckHandler = new ReadyCheckHandler(monitor, helper);
-
             _iconMenu = new PlayerIconMenu(_readyCheckHandler, monitor, helper);
             _iconMenu.PlayerIconClicked += PlayerIconClicked;
-            StardewModdingAPI.Events.SaveEvents.AfterLoad += SaveEvents_AfterLoad;
+            helper.Events.GameLoop.SaveLoaded += SaveEvents_AfterLoad;
         }
 
-        private void SaveEvents_AfterLoad(object sender, System.EventArgs e)
+        private void SaveEvents_AfterLoad(object sender, EventArgs e)
         {
             if ((Context.IsMultiplayer || !ConfigHelper.GetOptions().HideInSinglePlayer) && Game1.onScreenMenus.All(t => t.GetType() != typeof(PlayerIconMenu)))
-            {
-                Game1.onScreenMenus.Add(_iconMenu);
-            }
+            Game1.onScreenMenus.Add(_iconMenu);
         }
 
         private void PlayerIconClicked(object sender, PlayerIconClickedArgs input)
         {
             var player = PlayerHelpers.GetPlayerWithUniqueId(input.PlayerId);
-
             Game1.activeClickableMenu = new PlayerInformationMenu(player.UniqueMultiplayerID, _helper);
-
-
         }
 
     }
