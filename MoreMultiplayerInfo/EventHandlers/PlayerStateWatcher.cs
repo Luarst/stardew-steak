@@ -34,7 +34,7 @@ namespace MoreMultiplayerInfo.EventHandlers
                 { "rod", "Went fishing" },
                 { "slingshot", "Fired a slingshot" },
                 { "startevent", "Transitioned screens" },
-                { "endevent", "Ended a cutscene" }
+                { "endevent", "Finished a cutscene" }
             };
 
 
