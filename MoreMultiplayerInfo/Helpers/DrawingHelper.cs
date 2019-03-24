@@ -23,9 +23,8 @@ namespace MoreMultiplayerInfo
             {
                 int right = Game1.graphics.GraphicsDevice.Viewport.TitleSafeArea.Right;
                 int totalWidth = Game1.currentLocation.map.Layers[0].LayerWidth * Game1.tileSize;
-                int someOtherWidth = Game1.graphics.GraphicsDevice.Viewport.TitleSafeArea.Right - totalWidth;
-
-                result = right - someOtherWidth / 2;
+                int blackSpace = Game1.graphics.GraphicsDevice.Viewport.TitleSafeArea.Right - totalWidth;
+                result = right - blackSpace / 2;
             }
             else
             {

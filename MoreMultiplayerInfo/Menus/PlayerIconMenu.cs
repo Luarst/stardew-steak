@@ -26,10 +26,10 @@ namespace MoreMultiplayerInfo.EventHandlers
             _monitor = monitor;
             _helper = helper;
             Icons = new List<PlayerIcon>();
+            _helper.Events.GameLoop.SaveLoaded += SetupIcons;
             _helper.Events.GameLoop.UpdateTicked += SetupIcons;
-            _helper.Events.Display.WindowResized += SetupIcons;
+            _helper.Events.Display.RenderedHud += SetupIcons;
             _helper.Events.Multiplayer.PeerContextReceived += RefreshIcons;
-            _helper.Events.GameLoop.SaveLoaded += RefreshIcons;
         }
 
         private void SetupIcons(object sender, EventArgs e)
